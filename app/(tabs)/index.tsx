@@ -1,9 +1,17 @@
 import { AddStreak } from '@/components/BottomSheet';
-import React, { useState } from 'react';
-import { StyleSheet, View, Text, SafeAreaView, TouchableOpacity, ScrollView, Button } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { createTables, getHabitsWithStreak } from '../dbhelper';
+
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Button } from 'react-native';
+import { useRouter } from "expo-router"; // Import router
+//import { createTables } from '../dbhelper'; // Adjust path as needed
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
 
 export default function HomeScreen() {
   // Calendar data
+  const router = useRouter(); // Initialize router
+
   const getWeekDates = () => {
     const today = new Date();
     const startOfWeek = new Date(today);
@@ -20,6 +28,7 @@ export default function HomeScreen() {
   const dates = getWeekDates();
   const today = new Date().getDay(); // 0 = Sunday, 1 = Monday, etc.
   const [modalOpen,setmodalOpen] = useState(false);
+
   const getFormattedDate = () => {
     const date = new Date();
     return new Intl.DateTimeFormat('en-US', {
@@ -29,15 +38,44 @@ export default function HomeScreen() {
       year: 'numeric'  // "2025"
     }).format(date).replace(',', ' -'); // Format properly
   };
-  
-  // Habit data
-  const habits = [
-    { id: 1, name: "No Smoking", streak: 55, icon: "❤️", frequency: "Daily" },
-    { id: 2, name: "Meditate", streak: 55, icon: "🧘", frequency: "Daily" },
-  ];
+  // var habits = [
+  //   { id: 1, name: "No Smoking", streak: 55, icon: "❤️", frequency: "Daily" },
+  //   { id: 2, name: "Meditate", streak: 55, icon: "🧘", frequency: "Daily" },
+  // ];
+  interface Habit {
+  id: number;
+  name: string;
+  streak: number;
+  icon: string;
+  frequency: string;
+}
+  var data: Habit[] = [];
+  const [habits, setHabits] = useState<Habit[]>(data);  
+useEffect(() => {
+  (async () => {
+    debugger;
+    try {
+      await createTables();
+    } catch (e) {
+      console.log("Error initializing database:", e);
+    }
+
+    try {
+      console.log("before Habits:", habits);
+      data = await getHabitsWithStreak();
+      setHabits(data);
+      console.log("after Habits:", data);
+      console.log("Habits fetched:", habits);
+    } catch (e) {
+      console.log("Error in get:", e);
+    }
+    
+  })();
+}, []);
+
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaProvider style={styles.container}>
       {/* Calendar Row */}
 
 
@@ -84,9 +122,7 @@ export default function HomeScreen() {
       <View style={{ flex: 1 }}>
 
       {/* Add button */}
-        <TouchableOpacity onPress={() => {
-          setmodalOpen(true)
-        }} style={styles.addButton}>
+        <TouchableOpacity           onPress={() => router.push("/(stack)/streak" as any)} style={styles.addButton}>
           <Text style={styles.addButtonText}>+</Text>
         </TouchableOpacity>{modalOpen && <AddStreak onclose={() => {
           setmodalOpen(false)
@@ -94,7 +130,7 @@ export default function HomeScreen() {
 
 </View>
 
-    </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 
